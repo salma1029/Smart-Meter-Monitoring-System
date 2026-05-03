@@ -39,9 +39,6 @@ export default function DashboardScreen() {
             <Text style={styles.title}>Dashboard</Text>
             <Text style={styles.date}>Saturday, Mar 14</Text>
           </View>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Icon name="bell" size={24} color={colors.text} />
-          </TouchableOpacity>
         </View>
 
         <Card style={styles.mainUsageCard}>

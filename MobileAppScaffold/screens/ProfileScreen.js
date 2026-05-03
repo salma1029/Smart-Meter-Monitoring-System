@@ -1,9 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import colors from '../utils/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
-import PrimaryButton from '../components/buttons/PrimaryButton';
+import { auth, db } from '../utils/firebaseConfig';
+import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const ProfileInfoRow = ({ label, value, icon }) => (
   <View style={styles.infoRow}>
@@ -31,8 +33,29 @@ const SettingItem = ({ title, subtitle, icon, rightElement }) => (
 );
 
 export default function ProfileScreen({ navigation }) {
-  const handleSignOut = () => {
-    navigation.replace('Login');
+  const user = auth.currentUser;
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) return;
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) setProfile(docSnap.data());
+      } catch (e) {
+        console.log('Error loading profile:', e);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      Alert.alert('Logout Error', error.message);
+    }
   };
 
   return (
@@ -45,13 +68,13 @@ export default function ProfileScreen({ navigation }) {
 
         <Card style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>JD</Text>
+            <Text style={styles.avatarText}>{user?.displayName?.substring(0,2).toUpperCase() || 'JD'}</Text>
             <View style={styles.verifiedBadge}>
               <Icon name="bolt" size={12} color={colors.white} />
             </View>
           </View>
           <View style={styles.profileMain}>
-            <Text style={styles.userName}>John Doe</Text>
+            <Text style={styles.userName}>{user?.displayName || 'John Doe'}</Text>
             <Text style={styles.userTier}>Premium Member</Text>
             <View style={styles.statusRow}>
               <View style={styles.activeStatus}>
@@ -64,22 +87,22 @@ export default function ProfileScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Contact Information</Text>
         <Card style={styles.infoCard}>
-          <ProfileInfoRow label="Email" value="john.doe@example.com" icon="bell" />
+          <ProfileInfoRow label="Email" value={user?.email || '—'} icon="bell" />
           <View style={styles.divider} />
-          <ProfileInfoRow label="Phone" value="+1 (555) 123-4567" icon="bolt" />
+          <ProfileInfoRow label="Phone" value={profile?.phone || '—'} icon="bolt" />
           <View style={styles.divider} />
-          <ProfileInfoRow label="Address" value="123 Smart St, Tech City" icon="bolt" />
+          <ProfileInfoRow label="Address" value={profile?.address || '—'} icon="bolt" />
         </Card>
 
         <Text style={styles.sectionTitle}>Smart Meter</Text>
         <Card style={styles.meterCard}>
           <View style={styles.meterInfoItem}>
             <Text style={styles.meterLabel}>Meter ID</Text>
-            <Text style={styles.meterValue}>SM-2024-00123</Text>
+            <Text style={styles.meterValue}>{profile?.meterId || '—'}</Text>
           </View>
           <View style={styles.meterInfoItem}>
             <Text style={styles.meterLabel}>Installed</Text>
-            <Text style={styles.meterValue}>Jan 15, 2024</Text>
+            <Text style={styles.meterValue}>{profile?.installedDate || '—'}</Text>
           </View>
           <View style={styles.meterInfoItem}>
             <Text style={styles.meterLabel}>Connection</Text>
@@ -98,39 +121,7 @@ export default function ProfileScreen({ navigation }) {
             icon="bell"
             rightElement={<Switch value={true} />}
           />
-          <View style={styles.divider} />
-          <SettingItem title="Security" subtitle="Password & privacy" icon="bolt" />
-          <View style={styles.divider} />
-          <SettingItem title="Preferences" subtitle="App settings" icon="bolt" />
         </Card>
-
-        <Card style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <View style={styles.statusIconBg}>
-              <Icon name="bolt" size={24} color={colors.white} />
-            </View>
-            <View style={styles.statusHeaderText}>
-              <Text style={styles.statusTitle}>System Status</Text>
-              <Text style={styles.statusSubtitle}>All systems operational</Text>
-            </View>
-          </View>
-          <View style={styles.statusGrid}>
-            <View style={styles.statusGridItem}>
-              <Text style={styles.statusGridLabel}>Firmware</Text>
-              <Text style={styles.statusGridValue}>v2.4.1</Text>
-            </View>
-            <View style={styles.statusGridItem}>
-              <Text style={styles.statusGridLabel}>Last Update</Text>
-              <Text style={styles.statusGridValue}>Mar 5, 2024</Text>
-            </View>
-          </View>
-        </Card>
-
-        <PrimaryButton
-          title="Download Usage Report"
-          onPress={() => {}}
-          style={styles.reportBtn}
-        />
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Icon name="bolt" size={20} color={colors.error} />

@@ -1,19 +1,52 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import colors from '../utils/colors';
 import InputField from '../components/common/InputField';
 import PrimaryButton from '../components/buttons/PrimaryButton';
 import Icon from '../components/common/Icon';
+import { auth, db } from '../utils/firebaseConfig';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [meterId, setMeterId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSignUp = () => {
-    // Navigate to the main app (Tabs) after successful sign up
-    navigation.replace('Main');
+  const handleSignUp = async () => {
+    if (!email || !password || !name) {
+      Alert.alert('Error', 'Please fill in name, email and password');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName: name });
+      // Save extra profile data to Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        name,
+        email,
+        phone: phone || '',
+        address: address || '',
+        meterId: meterId || '',
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      Alert.alert('Sign Up Error', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const navigateToLogin = () => {
@@ -53,8 +86,12 @@ export default function SignUpScreen({ navigation }) {
             placeholder="Create a password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            icon={<Icon name="bolt" size={20} color={colors.textMuted} />}
+            secureTextEntry={!showPassword}
+            icon={
+              <TouchableOpacity onPress={() => setShowPassword(v => !v)}>
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            }
           />
 
           <InputField
@@ -62,13 +99,44 @@ export default function SignUpScreen({ navigation }) {
             placeholder="Repeat your password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            secureTextEntry={!showConfirmPassword}
+            icon={
+              <TouchableOpacity onPress={() => setShowConfirmPassword(v => !v)}>
+                <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            }
+          />
+
+          <Text style={styles.sectionDivider}>Additional Details (Optional)</Text>
+
+          <InputField
+            label="Phone Number"
+            placeholder="+1 (555) 123-4567"
+            value={phone}
+            onChangeText={setPhone}
+            icon={<Icon name="bolt" size={20} color={colors.textMuted} />}
+          />
+
+          <InputField
+            label="Address"
+            placeholder="123 Smart St, Tech City"
+            value={address}
+            onChangeText={setAddress}
+            icon={<Icon name="bolt" size={20} color={colors.textMuted} />}
+          />
+
+          <InputField
+            label="Meter ID"
+            placeholder="SM-2024-00123"
+            value={meterId}
+            onChangeText={setMeterId}
             icon={<Icon name="bolt" size={20} color={colors.textMuted} />}
           />
 
           <PrimaryButton
-            title="Create Account"
+            title={loading ? "Creating Account..." : "Create Account"}
             onPress={handleSignUp}
+            disabled={loading}
             style={styles.signUpButton}
           />
 
@@ -96,7 +164,8 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     padding: 24,
-    justifyContent: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
@@ -144,6 +213,15 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  sectionDivider: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 16,
+    marginTop: 8,
   },
   termsText: {
     fontSize: 12,

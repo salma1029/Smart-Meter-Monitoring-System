@@ -94,16 +94,6 @@ export default function AlertsScreen() {
           status="Resolved"
         />
 
-        <TouchableOpacity style={styles.settingsCard}>
-          <View style={styles.settingsIcon}>
-            <Icon name="bolt" size={24} color={colors.white} />
-          </View>
-          <View style={styles.settingsContent}>
-            <Text style={styles.settingsTitle}>Alert Settings</Text>
-            <Text style={styles.settingsSubtitle}>Customize your notification preferences</Text>
-          </View>
-          <Icon name="bolt" size={24} color={colors.textMuted} />
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );

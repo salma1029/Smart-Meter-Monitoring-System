@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import colors from '../utils/colors';
 import InputField from '../components/common/InputField';
 import PrimaryButton from '../components/buttons/PrimaryButton';
 import Icon from '../components/common/Icon';
+import { auth } from '../utils/firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Navigate to the main app (Tabs)
-    navigation.replace('Main');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      Alert.alert('Login Error', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const navigateToSignUp = () => {
@@ -53,14 +66,15 @@ export default function LoginScreen({ navigation }) {
           />
 
           <View style={styles.forgotPasswordContainer}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             </TouchableOpacity>
           </View>
 
           <PrimaryButton
-            title="Sign In"
+            title={loading ? "Signing In..." : "Sign In"}
             onPress={handleLogin}
+            disabled={loading}
             style={styles.loginButton}
           />
 

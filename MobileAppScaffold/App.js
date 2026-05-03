@@ -5,21 +5,43 @@ import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './navigation/AppNavigator';
 import colors from './utils/colors';
 
+import { auth } from './utils/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const [initializing, setInitializing] = React.useState(true);
+  const [user, setUser] = React.useState(null);
+
+  function onAuthStateChangedHandler(user) {
+    setUser(user);
+    if (initializing) setInitializing(false);
+  }
+
   useEffect(() => {
-    // Hide splash screen immediately as we don't have external assets to load currently
+    const subscriber = onAuthStateChanged(auth, onAuthStateChangedHandler);
+    
     const hideSplash = async () => {
       await SplashScreen.hideAsync();
     };
     hideSplash();
+
+    return subscriber;
   }, []);
+
+  if (initializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <AppNavigator />
+      <AppNavigator user={user} />
     </View>
   );
 }
