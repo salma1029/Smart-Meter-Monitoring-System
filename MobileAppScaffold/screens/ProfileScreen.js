@@ -1,134 +1,134 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import colors from '../utils/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
-import { auth, db } from '../utils/firebaseConfig';
+import { auth } from '../utils/firebaseConfig';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import Animated, { FadeInUp, FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { Svg, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
-const ProfileInfoRow = ({ label, value, icon }) => (
-  <View style={styles.infoRow}>
-    <View style={styles.infoIconBg}>
-      <Icon name={icon} size={20} color={colors.text} />
-    </View>
-    <View style={styles.infoContent}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  </View>
-);
+const { width } = Dimensions.get('window');
 
-const SettingItem = ({ title, subtitle, icon, rightElement }) => (
-  <TouchableOpacity style={styles.settingItem}>
-    <View style={styles.settingIconBg}>
-      <Icon name={icon} size={20} color={colors.text} />
-    </View>
-    <View style={styles.settingText}>
-      <Text style={styles.settingTitle}>{title}</Text>
-      {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
-    </View>
-    {rightElement || <Icon name="bolt" size={20} color={colors.textMuted} />}
-  </TouchableOpacity>
+const ProfileOption = ({ icon, label, sublabel, color, index, onPress }) => (
+  <Animated.View entering={FadeInRight.delay(index * 100).duration(600)}>
+    <TouchableOpacity style={styles.optionItem} onPress={onPress}>
+      <View style={[styles.optionIconBg, { backgroundColor: `${color}15` }]}>
+        <Icon name={icon} size={22} color={color} />
+      </View>
+      <View style={styles.optionText}>
+        <Text style={styles.optionLabel}>{label}</Text>
+        <Text style={styles.optionSublabel}>{sublabel}</Text>
+      </View>
+      <Icon name="arrow-left" size={20} color="#CBD5E1" style={{ transform: [{ rotate: '180deg' }] }} />
+    </TouchableOpacity>
+  </Animated.View>
 );
 
 export default function ProfileScreen({ navigation }) {
-  const user = auth.currentUser;
-  const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState(auth.currentUser);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user) return;
-      try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) setProfile(docSnap.data());
-      } catch (e) {
-        console.log('Error loading profile:', e);
-      }
-    };
-    loadProfile();
-  }, []);
-
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      Alert.alert('Logout Error', error.message);
+      console.error('Logout failed:', error);
     }
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>Account & settings</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.duration(800)} style={styles.profileHeader}>
+          <View style={styles.avatarWrapper}>
+             <Svg height="120" width="120" style={styles.avatarSvg}>
+                <Defs>
+                  <LinearGradient id="avatarGrad" x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={colors.primary} />
+                    <Stop offset="1" stopColor={colors.secondary} />
+                  </LinearGradient>
+                </Defs>
+                <Circle cx="60" cy="60" r="58" stroke="url(#avatarGrad)" strokeWidth="3" fill="none" strokeDasharray="10 5" />
+             </Svg>
+             <View style={styles.avatarContainer}>
+                <Text style={styles.avatarInitial}>{user?.displayName ? user.displayName[0] : 'U'}</Text>
+             </View>
+             <View style={styles.editBadge}>
+                <Icon name="eye" size={12} color={colors.white} />
+             </View>
+          </View>
+          
+          <Text style={styles.userName}>{user?.displayName || 'Smart User'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@smartmeter.com'}</Text>
+          
+          <View style={styles.statsGrid}>
+             <View style={styles.statItem}>
+                <Text style={styles.statValue}>12.4</Text>
+                <Text style={styles.statLabel}>kWh Avg</Text>
+             </View>
+             <View style={styles.statDivider} />
+             <View style={styles.statItem}>
+                <Text style={styles.statValue}>89%</Text>
+                <Text style={styles.statLabel}>Efficiency</Text>
+             </View>
+             <View style={styles.statDivider} />
+             <View style={styles.statItem}>
+                <Text style={styles.statValue}>5</Text>
+                <Text style={styles.statLabel}>Awards</Text>
+             </View>
+          </View>
+        </Animated.View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Card style={styles.optionsCard}>
+            <ProfileOption 
+               index={0} 
+               icon="user" 
+               label="Account Security" 
+               sublabel="Manage password & 2FA" 
+               color={colors.primary} 
+            />
+            <View style={styles.divider} />
+            <ProfileOption 
+               index={1} 
+               icon="bell" 
+               label="Notification Hub" 
+               sublabel="Alerts & weekly reports" 
+               color={colors.secondary} 
+            />
+            <View style={styles.divider} />
+            <ProfileOption 
+               index={2} 
+               icon="cpu" 
+               label="Model Sensitivity" 
+               sublabel="Tune NILM detection" 
+               color={colors.accent} 
+            />
+          </Card>
         </View>
 
-        <Card style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>{user?.displayName?.substring(0,2).toUpperCase() || 'JD'}</Text>
-            <View style={styles.verifiedBadge}>
-              <Icon name="bolt" size={12} color={colors.white} />
-            </View>
-          </View>
-          <View style={styles.profileMain}>
-            <Text style={styles.userName}>{user?.displayName || 'John Doe'}</Text>
-            <Text style={styles.userTier}>Premium Member</Text>
-            <View style={styles.statusRow}>
-              <View style={styles.activeStatus}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Active</Text>
-              </View>
-            </View>
-          </View>
-        </Card>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <Card style={styles.optionsCard}>
+            <ProfileOption 
+               index={3} 
+               icon="bolt" 
+               label="Export Data" 
+               sublabel="CSV usage history" 
+               color="#10B981" 
+            />
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+               <View style={styles.logoutIconBg}>
+                  <Icon name="arrow-left" size={20} color={colors.error} />
+               </View>
+               <Text style={styles.logoutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </Card>
+        </View>
 
-        <Text style={styles.sectionTitle}>Contact Information</Text>
-        <Card style={styles.infoCard}>
-          <ProfileInfoRow label="Email" value={user?.email || '—'} icon="bell" />
-          <View style={styles.divider} />
-          <ProfileInfoRow label="Phone" value={profile?.phone || '—'} icon="bolt" />
-          <View style={styles.divider} />
-          <ProfileInfoRow label="Address" value={profile?.address || '—'} icon="bolt" />
-        </Card>
-
-        <Text style={styles.sectionTitle}>Smart Meter</Text>
-        <Card style={styles.meterCard}>
-          <View style={styles.meterInfoItem}>
-            <Text style={styles.meterLabel}>Meter ID</Text>
-            <Text style={styles.meterValue}>{profile?.meterId || '—'}</Text>
-          </View>
-          <View style={styles.meterInfoItem}>
-            <Text style={styles.meterLabel}>Installed</Text>
-            <Text style={styles.meterValue}>{profile?.installedDate || '—'}</Text>
-          </View>
-          <View style={styles.meterInfoItem}>
-            <Text style={styles.meterLabel}>Connection</Text>
-            <View style={styles.connectionBadge}>
-              <Icon name="bolt" size={14} color={colors.success} />
-              <Text style={styles.connectionText}>PLC + RF</Text>
-            </View>
-          </View>
-        </Card>
-
-        <Text style={styles.sectionTitle}>Settings</Text>
-        <Card style={styles.settingsCard}>
-          <SettingItem
-            title="Notifications"
-            subtitle="Alerts & updates"
-            icon="bell"
-            rightElement={<Switch value={true} />}
-          />
-        </Card>
-
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-          <Icon name="bolt" size={20} color={colors.error} />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.versionText}>Smart Meter Monitor v1.0.0</Text>
+        <Text style={styles.version}>App Version 2.4.0 (Stable)</Text>
       </ScrollView>
     </View>
   );
@@ -137,265 +137,173 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     padding: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  profileCard: {
-    flexDirection: 'row',
+  profileHeader: {
     alignItems: 'center',
-    padding: 20,
-    marginBottom: 32,
+    marginBottom: 40,
+  },
+  avatarWrapper: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarSvg: {
+    position: 'absolute',
   },
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
   },
-  avatarText: {
-    fontSize: 28,
+  avatarInitial: {
+    fontSize: 42,
+    fontWeight: '800',
     color: colors.white,
-    fontWeight: 'bold',
   },
-  verifiedBadge: {
+  editBadge: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.success,
+    bottom: 5,
+    right: 5,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.secondary,
     borderWidth: 3,
-    borderColor: colors.surface,
+    borderColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
   },
   userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
-  userTier: {
+  userEmail: {
     fontSize: 14,
-    color: colors.primary,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  statusRow: {
-    marginTop: 8,
-  },
-  activeStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    color: colors.text,
+    color: '#64748B',
+    marginTop: 4,
     fontWeight: '500',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    marginTop: 32,
+    backgroundColor: colors.white,
+    padding: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 15,
+    elevation: 3,
+    width: '100%',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#F1F5F9',
+    alignSelf: 'center',
+  },
+  section: {
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '800',
+    color: '#0F172A',
     marginBottom: 16,
-  },
-  infoCard: {
-    padding: 16,
-    marginBottom: 24,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  infoIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  infoValue: {
-    fontSize: 15,
-    color: colors.text,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 56,
-  },
-  meterCard: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  meterInfoItem: {
-    alignItems: 'center',
-  },
-  meterLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: 8,
-  },
-  meterValue: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  connectionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  connectionText: {
-    fontSize: 14,
-    color: colors.success,
-    fontWeight: '600',
     marginLeft: 4,
   },
-  settingsCard: {
-    padding: 4,
-    marginBottom: 24,
+  optionsCard: {
+    padding: 12,
+    borderRadius: 28,
   },
-  settingItem: {
+  optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
   },
-  settingIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  settingText: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 15,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  settingSubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  statusCard: {
-    backgroundColor: colors.text,
-    padding: 20,
-    marginBottom: 32,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statusIconBg: {
+  optionIconBg: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  statusTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  statusSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-  },
-  statusGrid: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    paddingTop: 16,
-  },
-  statusGridItem: {
+  optionText: {
     flex: 1,
   },
-  statusGridLabel: {
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  optionSublabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
+    color: '#94A3B8',
+    marginTop: 2,
   },
-  statusGridValue: {
-    fontSize: 14,
-    color: colors.white,
-    fontWeight: '600',
-    marginTop: 4,
+  divider: {
+    height: 1,
+    backgroundColor: '#F8FAFC',
+    marginHorizontal: 12,
   },
-  reportBtn: {
-    backgroundColor: colors.text,
-    height: 56,
-    borderRadius: 16,
-  },
-  signOutBtn: {
+  logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
+    marginTop: 4,
+  },
+  logoutIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: `${colors.error}10`,
     justifyContent: 'center',
-    paddingVertical: 16,
-    marginTop: 16,
+    alignItems: 'center',
+    marginRight: 16,
   },
-  signOutText: {
+  logoutText: {
     fontSize: 16,
+    fontWeight: '700',
     color: colors.error,
-    fontWeight: '600',
-    marginLeft: 8,
   },
-  versionText: {
+  version: {
     textAlign: 'center',
-    color: colors.textMuted,
+    color: '#CBD5E1',
     fontSize: 12,
-    marginTop: 32,
-    paddingBottom: 24,
-  },
+    fontWeight: '600',
+    marginTop: 8,
+  }
 });

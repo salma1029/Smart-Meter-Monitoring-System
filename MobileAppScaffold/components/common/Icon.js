@@ -1,5 +1,5 @@
 import React from 'react';
-import { Svg, Path, G, Mask, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { Svg, Path, G, Mask, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import colors from '../../utils/colors';
 
 const Icon = ({ name, size = 24, color = colors.text, style }) => {
@@ -65,6 +65,49 @@ const Icon = ({ name, size = 24, color = colors.text, style }) => {
           <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5" />
             <Path d="M12 19l-7-7 7-7" />
+          </G>
+        );
+      case 'tv':
+        return (
+          <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="7" width="20" height="15" rx="2" />
+            <Path d="M17 22H7" />
+            <Path d="M2 12h20" />
+          </G>
+        );
+      case 'laptop':
+        return (
+          <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="3" width="20" height="14" rx="2" />
+            <Path d="M2 20h20" />
+            <Path d="M20 20l2 3H2l2-3" />
+          </G>
+        );
+      case 'air-conditioner':
+        return (
+          <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="4" width="20" height="12" rx="2" />
+            <Path d="M6 16v3" />
+            <Path d="M10 16v3" />
+            <Path d="M14 16v3" />
+            <Path d="M18 16v3" />
+            <Path d="M2 10h20" />
+          </G>
+        );
+      case 'refresh-cw':
+        return (
+          <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M23 4v6h-6" />
+            <Path d="M1 20v-6h6" />
+            <Path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </G>
+        );
+      case 'alert-triangle':
+        return (
+          <G stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <Path d="M12 9v4" />
+            <Path d="M12 17h.01" />
           </G>
         );
       default:

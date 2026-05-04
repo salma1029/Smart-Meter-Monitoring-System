@@ -19,14 +19,16 @@ export default function SignUpScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSignUp = async () => {
+    setErrorMessage('');
     if (!email || !password || !name) {
-      Alert.alert('Error', 'Please fill in name, email and password');
+      setErrorMessage('Please fill in name, email and password');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      setErrorMessage('Passwords do not match');
       return;
     }
     setLoading(true);
@@ -43,7 +45,8 @@ export default function SignUpScreen({ navigation }) {
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
-      Alert.alert('Sign Up Error', error.message);
+      console.error('Sign Up Error:', error);
+      setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
@@ -132,6 +135,8 @@ export default function SignUpScreen({ navigation }) {
             onChangeText={setMeterId}
             icon={<Icon name="bolt" size={20} color={colors.textMuted} />}
           />
+
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
           <PrimaryButton
             title={loading ? "Creating Account..." : "Create Account"}
@@ -229,5 +234,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 32,
     lineHeight: 18,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });

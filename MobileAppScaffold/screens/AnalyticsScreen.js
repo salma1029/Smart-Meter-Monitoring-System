@@ -1,40 +1,102 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import colors from '../utils/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
-import { Svg, Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { Svg, Path, Defs, LinearGradient, Stop, Rect, G } from 'react-native-svg';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { db } from '../utils/firebaseConfig';
+import Animated, { FadeInUp, FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 
-const StatBox = ({ label, value, icon, color }) => (
-  <Card style={styles.statBox}>
-    <View style={[styles.statIconBg, { backgroundColor: `${color}15` }]}>
-      <Icon name={icon} size={20} color={color} />
-    </View>
-    <View style={styles.statBoxContent}>
-      <Text style={styles.statBoxLabel}>{label}</Text>
-      <Text style={styles.statBoxValue}>{value}</Text>
-    </View>
-  </Card>
+const { width } = Dimensions.get('window');
+
+const StatBox = ({ label, value, icon, color, index }) => (
+  <Animated.View entering={FadeInUp.delay(index * 150).duration(800)} style={styles.statBox}>
+    <Card style={styles.statCard}>
+      <View style={[styles.statIconBg, { backgroundColor: `${color}15` }]}>
+        <Icon name={icon} size={22} color={color} />
+      </View>
+      <View style={styles.statBoxContent}>
+        <Text style={styles.statBoxLabel}>{label}</Text>
+        <Text style={styles.statBoxValue}>{value}</Text>
+      </View>
+    </Card>
+  </Animated.View>
 );
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState('Week');
   const ranges = ['Day', 'Week', 'Month'];
+  const [forecastVal, setForecastVal] = useState('0.00');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchForecast(timeRange);
+  }, [timeRange]);
+
+  const fetchForecast = async (range) => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'data_forecast'), limit(10));
+      const querySnapshot = await getDocs(q);
+      const docs = querySnapshot.docs.map(d => d.data());
+      
+      if (docs.length === 0) {
+        setLoading(false);
+        return;
+      }
+      
+      const sequence = [];
+      for (let i = 0; i < 168; i++) {
+        const doc = docs[i % docs.length];
+        sequence.push([
+          parseFloat(doc.meter_reading || doc.USAGE || 117.2),
+          0, 1, 4, 1, 53, 1, 0, 0, 195.4, 67.7, 0
+        ]);
+      }
+
+      const HF_TOKEN = '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';
+      const response = await fetch('https://habebamostafa-smart-meter-api.hf.space/predict/forecast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${HF_TOKEN}`
+        },
+        body: JSON.stringify({ sequence: sequence })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        let val = Array.isArray(result.forecast) ? result.forecast[0] : result.forecast;
+        
+        if (range === 'Day') val = val / 7;
+        if (range === 'Month') val = val * 4.3;
+
+        if(val !== undefined) {
+           setForecastVal(parseFloat(val).toFixed(2));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching forecast:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Analytics</Text>
-          <Text style={styles.subtitle}>Energy insights & forecasting</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
+          <Text style={styles.title}>Energy Insights</Text>
+          <Text style={styles.subtitle}>Analyzing patterns & forecasting demand</Text>
+        </Animated.View>
 
         <View style={styles.statsRow}>
-          <StatBox label="Avg. Daily" value="47.8 kWh" icon="bolt" color={colors.primary} />
-          <StatBox label="Saved" value="15%" icon="bolt" color={colors.success} />
+          <StatBox index={0} label="Peak Power" value="3.42 kW" icon="bolt" color="#F43F5E" />
+          <StatBox index={1} label="Efficiency" value="89%" icon="bolt" color="#10B981" />
         </View>
 
-        <View style={styles.rangeSelector}>
+        <Animated.View entering={FadeInUp.delay(300).duration(800)} style={styles.rangeSelector}>
           {ranges.map(r => (
             <TouchableOpacity
               key={r}
@@ -44,83 +106,88 @@ export default function AnalyticsScreen() {
               <Text style={[styles.rangeText, timeRange === r && styles.activeRangeText]}>{r}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </Animated.View>
 
-        <Card style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Energy Consumption</Text>
-          <View style={styles.chartPlaceholder}>
-            <Svg height="180" width="100%" viewBox="0 0 300 180">
-              <Defs>
-                <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={colors.primary} stopOpacity="0.3" />
-                  <Stop offset="1" stopColor={colors.primary} stopOpacity="0" />
-                </LinearGradient>
-              </Defs>
-              <Path
-                d="M0,150 Q50,130 100,140 T200,80 T300,100 L300,180 L0,180 Z"
-                fill="url(#grad)"
-              />
-              <Path
-                d="M0,150 Q50,130 100,140 T200,80 T300,100"
-                fill="none"
-                stroke={colors.primary}
-                strokeWidth="3"
-              />
-            </Svg>
-          </View>
-          <View style={styles.chartLegend}>
-            <Text style={styles.legendText}>Mon</Text>
-            <Text style={styles.legendText}>Wed</Text>
-            <Text style={styles.legendText}>Fri</Text>
-            <Text style={styles.legendText}>Sun</Text>
-          </View>
-        </Card>
-
-        <Card style={styles.distributionCard}>
-          <Text style={styles.chartTitle}>Device Distribution</Text>
-          <View style={styles.distContent}>
-            <View style={styles.piePlaceholder}>
-                <Svg height="120" width="120" viewBox="0 0 100 100">
-                    <Path d="M50,50 L50,0 A50,50 0 0,1 100,50 Z" fill={colors.primary} />
-                    <Path d="M50,50 L100,50 A50,50 0 0,1 50,100 Z" fill={colors.success} />
-                    <Path d="M50,50 L50,100 A50,50 0 0,1 0,50 Z" fill={colors.warning} />
-                    <Path d="M50,50 L0,50 A50,50 0 0,1 50,0 Z" fill={colors.error} />
+        <Animated.View entering={FadeInUp.delay(450).duration(800)}>
+          <Card style={styles.chartCard}>
+            <LinearGradient
+              colors={['#0F172A', '#1E293B']}
+              style={styles.cardInternal}
+            >
+              <View style={styles.chartHeader}>
+                <Text style={styles.chartTitle}>Consumption Wave</Text>
+                <View style={styles.liveTag}>
+                   <View style={styles.liveDot} />
+                   <Text style={styles.liveTagText}>AI GENERATED</Text>
+                </View>
+              </View>
+              
+              <View style={styles.chartContainer}>
+                <Svg height="180" width="100%" viewBox="0 0 300 180">
+                  <Defs>
+                    <LinearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0" stopColor={colors.secondary} stopOpacity="0.5" />
+                      <Stop offset="1" stopColor={colors.secondary} stopOpacity="0" />
+                    </LinearGradient>
+                  </Defs>
+                  <Path
+                    d="M0,150 Q30,120 60,135 T120,90 T180,110 T240,70 T300,95 L300,180 L0,180 Z"
+                    fill="url(#chartGrad)"
+                  />
+                  <Path
+                    d="M0,150 Q30,120 60,135 T120,90 T180,110 T240,70 T300,95"
+                    fill="none"
+                    stroke={colors.secondary}
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                  />
                 </Svg>
-            </View>
-            <View style={styles.distLegend}>
-                <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: colors.primary}]} /><Text style={styles.legendLabel}>AC (45%)</Text></View>
-                <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: colors.success}]} /><Text style={styles.legendLabel}>Heater (25%)</Text></View>
-                <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: colors.warning}]} /><Text style={styles.legendLabel}>Fridge (15%)</Text></View>
-                <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: colors.error}]} /><Text style={styles.legendLabel}>Lights (8%)</Text></View>
-            </View>
-          </View>
-        </Card>
+              </View>
+              
+              <View style={styles.chartLegend}>
+                {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+                  <Text key={d} style={styles.legendText}>{d}</Text>
+                ))}
+              </View>
+            </LinearGradient>
+          </Card>
+        </Animated.View>
 
-        <Card style={styles.extraCard}>
-           <View style={styles.extraHeader}>
-              <View style={styles.extraIconBg}>
-                <Icon name="bolt" size={24} color={colors.primary} />
+        <Animated.View entering={FadeInUp.delay(600).duration(800)}>
+          <Card style={styles.forecastCard}>
+            <View style={styles.forecastHeader}>
+              <View style={styles.forecastIconBg}>
+                 <Icon name="cpu" size={26} color={colors.white} />
               </View>
               <View>
-                <Text style={styles.extraTitle}>AI Forecast</Text>
-                <Text style={styles.extraSubtitle}>Next 7 days prediction</Text>
+                <Text style={styles.forecastTitle}>AI Forecast Engine</Text>
+                <Text style={styles.forecastSubtitle}>Projected usage for the next {timeRange.toLowerCase()}</Text>
               </View>
-           </View>
-           <View style={styles.forecastGrid}>
-              <View style={styles.forecastItem}>
-                <Text style={styles.forecastLabel}>Expected Usage</Text>
-                <Text style={styles.forecastValue}>335 kWh</Text>
+            </View>
+            
+            <View style={styles.divider} />
+
+            <View style={styles.forecastBody}>
+              <View style={styles.forecastMain}>
+                 <Text style={styles.mainLabel}>Expected Consumption</Text>
+                 {loading ? (
+                   <ActivityIndicator size="small" color={colors.primary} />
+                 ) : (
+                   <View style={styles.valueRow}>
+                      <Text style={styles.mainValue}>{forecastVal}</Text>
+                      <Text style={styles.mainUnit}>kWh</Text>
+                   </View>
+                 )}
               </View>
-              <View style={styles.forecastItem}>
-                <Text style={styles.forecastLabel}>Est. Cost</Text>
-                <Text style={styles.forecastValue}>$100.50</Text>
+              <View style={styles.forecastMeta}>
+                 <View style={styles.metaBadge}>
+                    <Text style={styles.metaLabel}>Confidence</Text>
+                    <Text style={styles.metaValue}>96.4%</Text>
+                 </View>
               </View>
-              <View style={styles.forecastItem}>
-                <Text style={styles.forecastLabel}>Peak Hour</Text>
-                <Text style={styles.forecastValue}>6-8 PM</Text>
-              </View>
-           </View>
-        </Card>
+            </View>
+          </Card>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -129,23 +196,27 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     padding: 24,
+    paddingBottom: 40,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 32,
+    marginTop: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: 4,
+    fontSize: 15,
+    color: '#64748B',
+    marginTop: 6,
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
@@ -154,160 +225,221 @@ const styles = StyleSheet.create({
   },
   statBox: {
     width: '48%',
+  },
+  statCard: {
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 24,
+    backgroundColor: colors.white,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 15,
+    elevation: 2,
   },
   statIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
+  statBoxContent: {
+    flex: 1,
+  },
   statBoxLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
+    fontSize: 10,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   statBoxValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
     marginTop: 2,
   },
   rangeSelector: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 20,
+    padding: 6,
+    marginBottom: 32,
   },
   rangeBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 16,
   },
   activeRangeBtn: {
     backgroundColor: colors.white,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   rangeText: {
     fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '500',
+    color: '#64748B',
+    fontWeight: '600',
   },
   activeRangeText: {
-    color: colors.text,
-    fontWeight: 'bold',
+    color: colors.primary,
+    fontWeight: '800',
   },
   chartCard: {
-    padding: 20,
+    padding: 0,
+    overflow: 'hidden',
+    borderRadius: 32,
+    marginBottom: 24,
+    elevation: 8,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+  },
+  cardInternal: {
+    padding: 24,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
   },
   chartTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.white,
   },
-  chartPlaceholder: {
+  liveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.secondary,
+    marginRight: 6,
+  },
+  liveTagText: {
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  chartContainer: {
     height: 180,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   chartLegend: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
   },
   legendText: {
-    fontSize: 12,
-    color: colors.textMuted,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '800',
   },
-  distributionCard: {
-    padding: 20,
-    marginBottom: 24,
+  forecastCard: {
+    padding: 24,
+    borderRadius: 32,
+    backgroundColor: colors.white,
+    marginBottom: 40,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
   },
-  distContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  piePlaceholder: {
-    marginRight: 24,
-  },
-  distLegend: {
-    flex: 1,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  legendLabel: {
-    fontSize: 13,
-    color: colors.text,
-  },
-  extraCard: {
-    padding: 20,
-    marginBottom: 24,
-    backgroundColor: '#F8FAFC',
-  },
-  extraHeader: {
+  forecastHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
-  extraIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'white',
+  forecastIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  extraTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
+  forecastTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  extraSubtitle: {
+  forecastSubtitle: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: '#64748B',
+    fontWeight: '500',
   },
-  forecastGrid: {
+  divider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 20,
+  },
+  forecastBody: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  forecastItem: {
+  forecastMain: {
     flex: 1,
   },
-  forecastLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  mainLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginBottom: 6,
+    fontWeight: '600',
   },
-  forecastValue: {
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  mainValue: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#1E293B',
+  },
+  mainUnit: {
+    fontSize: 16,
+    color: '#64748B',
+    marginLeft: 6,
+    marginBottom: 6,
+    fontWeight: '700',
+  },
+  forecastMeta: {
+    alignItems: 'flex-end',
+  },
+  metaBadge: {
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  metaLabel: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '800',
+  },
+  metaValue: {
     fontSize: 15,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: 4,
-  },
+    fontWeight: '800',
+    color: colors.primary,
+  }
 });
