@@ -15,7 +15,7 @@ def test_api():
     url = "https://habebamostafa-smart-meter-api.hf.space/predict/nilm"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer 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"
+        "Authorization": "Bearer PASTE_YOUR_TOKEN_HERE" # SECURITY: Token masked
     }
     
     print(f"Sending sequence of shape ({len(sequence)}, 4) to {url}...")

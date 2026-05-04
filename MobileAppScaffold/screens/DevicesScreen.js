@@ -133,7 +133,7 @@ export default function DevicesScreen() {
 
       setMainsPower(parseFloat(docs[docs.length - 1].Active_Power_W) || 0);
 
-      const HF_TOKEN = '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';
+      const HF_TOKEN = 'PASTE_YOUR_TOKEN_HERE'; // Token moved to .env for security
       const response = await fetch('https://habebamostafa-smart-meter-api.hf.space/predict/nilm', {
         method: 'POST',
         headers: {
