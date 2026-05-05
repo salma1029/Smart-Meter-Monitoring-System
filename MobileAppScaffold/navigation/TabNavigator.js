@@ -5,7 +5,7 @@ import DevicesScreen from '../screens/DevicesScreen';
 import AlertsScreen from '../screens/AlertsScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import colors from '../utils/colors';
+import colors from '../assets/styles/colors';
 import Icon from '../components/common/Icon';
 
 const Tab = createBottomTabNavigator();

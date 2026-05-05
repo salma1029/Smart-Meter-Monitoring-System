@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import colors from '../../utils/colors';
+import colors from '../../assets/styles/colors';
 import font from '../../assets/fonts/font';
 
 const SecondaryButton = ({ title, onPress, style, disabled }) => {

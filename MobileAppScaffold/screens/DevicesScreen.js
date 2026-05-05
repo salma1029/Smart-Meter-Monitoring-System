@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
-import colors from '../utils/colors';
+import colors from '../assets/styles/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import { Svg, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';

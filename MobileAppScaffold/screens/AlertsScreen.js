@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import colors from '../utils/colors';
+import colors from '../assets/styles/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';

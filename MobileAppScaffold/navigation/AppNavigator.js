@@ -5,7 +5,7 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import TabNavigator from './TabNavigator';
-import colors from '../utils/colors';
+import colors from '../assets/styles/colors';
 
 const Stack = createStackNavigator();
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Svg, Path, G, Mask, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
-import colors from '../../utils/colors';
+import colors from '../../assets/styles/colors';
 
 const Icon = ({ name, size = 24, color = colors.text, style }) => {
   const renderPath = () => {

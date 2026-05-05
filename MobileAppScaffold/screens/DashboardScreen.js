@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
-import colors from '../utils/colors';
+import colors from '../assets/styles/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import { Svg, Circle, Defs, LinearGradient, Stop, Rect, Path } from 'react-native-svg';
@@ -78,6 +78,7 @@ export default function DashboardScreen() {
   const [activeList, setActiveList] = useState([]);
   const [lastAlert, setLastAlert] = useState(null);
   const [userName, setUserName] = useState('User');
+  const [showNotification, setShowNotification] = useState(false); // For the pop-up banner
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -154,6 +155,8 @@ export default function DashboardScreen() {
                 type: 'CRITICAL',
                 time: 'Just now'
               });
+              setShowNotification(true); // Trigger the pop-up
+              setTimeout(() => setShowNotification(false), 5000); // Auto-hide after 5 seconds
             }
           }
         }
@@ -178,6 +181,12 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
+      {showNotification && (
+        <Animated.View entering={FadeInUp} style={styles.notifBanner}>
+          <Icon name="alert-triangle" size={20} color={colors.white} />
+          <Text style={styles.notifBannerText}>Critical: Energy Spike Detected!</Text>
+        </Animated.View>
+      )}
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
           <View>
@@ -492,5 +501,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#94A3B8',
     padding: 20,
+  },
+  notifBanner: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: colors.error,
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 1000,
+    shadowColor: colors.error,
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  notifBannerText: {
+    color: colors.white,
+    fontWeight: 'bold',
+    marginLeft: 12,
+    fontSize: 14,
   }
 });

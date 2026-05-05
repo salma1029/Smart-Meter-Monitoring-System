@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import AppNavigator from './navigation/AppNavigator';
-import colors from './utils/colors';
+import colors from './assets/styles/colors';
 
 import { auth } from './utils/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
