@@ -5,5 +5,5 @@ npm install
 ## start 
 npx expo star
 
-## 🎬 Demo Video
-https://github.com/salma1029/Smart-Meter-Monitoring-System/tree/master/final%20app%20demo/app_demo.mp4
+## Demo Video
+https://drive.google.com/file/d/1J8kwMuq8kRoafXnbQHfCUrGhxRFS4N2-/view?usp=sharing
