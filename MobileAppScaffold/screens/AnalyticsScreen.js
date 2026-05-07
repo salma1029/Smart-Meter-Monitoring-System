@@ -40,12 +40,12 @@ export default function AnalyticsScreen() {
       const q = query(collection(db, 'data_forecast'), limit(10));
       const querySnapshot = await getDocs(q);
       const docs = querySnapshot.docs.map(d => d.data());
-      
+
       if (docs.length === 0) {
         setLoading(false);
         return;
       }
-      
+
       const sequence = [];
       for (let i = 0; i < 168; i++) {
         const doc = docs[i % docs.length];
@@ -68,12 +68,12 @@ export default function AnalyticsScreen() {
       if (response.ok) {
         const result = await response.json();
         let val = Array.isArray(result.forecast) ? result.forecast[0] : result.forecast;
-        
+
         if (range === 'Day') val = val / 7;
         if (range === 'Month') val = val * 4.3;
 
-        if(val !== undefined) {
-           setForecastVal(parseFloat(val).toFixed(2));
+        if (val !== undefined) {
+          setForecastVal(parseFloat(val).toFixed(2));
         }
       }
     } catch (error) {
@@ -117,11 +117,11 @@ export default function AnalyticsScreen() {
               <View style={styles.chartHeader}>
                 <Text style={styles.chartTitle}>Consumption Wave</Text>
                 <View style={styles.liveTag}>
-                   <View style={styles.liveDot} />
-                   <Text style={styles.liveTagText}>AI GENERATED</Text>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveTagText}>AI GENERATED</Text>
                 </View>
               </View>
-              
+
               <View style={styles.chartContainer}>
                 <Svg height="180" width="100%" viewBox="0 0 300 180">
                   <Defs>
@@ -143,7 +143,7 @@ export default function AnalyticsScreen() {
                   />
                 </Svg>
               </View>
-              
+
               <View style={styles.chartLegend}>
                 {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
                   <Text key={d} style={styles.legendText}>{d}</Text>
@@ -157,33 +157,33 @@ export default function AnalyticsScreen() {
           <Card style={styles.forecastCard}>
             <View style={styles.forecastHeader}>
               <View style={styles.forecastIconBg}>
-                 <Icon name="cpu" size={26} color={colors.white} />
+                <Icon name="cpu" size={26} color={colors.white} />
               </View>
               <View>
                 <Text style={styles.forecastTitle}>AI Forecast Engine</Text>
                 <Text style={styles.forecastSubtitle}>Projected usage for the next {timeRange.toLowerCase()}</Text>
               </View>
             </View>
-            
+
             <View style={styles.divider} />
 
             <View style={styles.forecastBody}>
               <View style={styles.forecastMain}>
-                 <Text style={styles.mainLabel}>Expected Consumption</Text>
-                 {loading ? (
-                   <ActivityIndicator size="small" color={colors.primary} />
-                 ) : (
-                   <View style={styles.valueRow}>
-                      <Text style={styles.mainValue}>{forecastVal}</Text>
-                      <Text style={styles.mainUnit}>kWh</Text>
-                   </View>
-                 )}
+                <Text style={styles.mainLabel}>Expected Consumption</Text>
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <View style={styles.valueRow}>
+                    <Text style={styles.mainValue}>{forecastVal}</Text>
+                    <Text style={styles.mainUnit}>kWh</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.forecastMeta}>
-                 <View style={styles.metaBadge}>
-                    <Text style={styles.metaLabel}>Confidence</Text>
-                    <Text style={styles.metaValue}>96.4%</Text>
-                 </View>
+                <View style={styles.metaBadge}>
+                  <Text style={styles.metaLabel}>Confidence</Text>
+                  <Text style={styles.metaValue}>96.4%</Text>
+                </View>
               </View>
             </View>
           </Card>

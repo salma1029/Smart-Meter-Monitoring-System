@@ -43,7 +43,7 @@ const CircularIndicator = ({ size, progress, color, active }) => {
         )}
       </Svg>
       <View style={[styles.innerCircle, { backgroundColor: active ? color : '#F1F5F9' }]}>
-         <Icon name="bolt" size={size * 0.4} color={active ? colors.white : '#94A3B8'} />
+        <Icon name="bolt" size={size * 0.4} color={active ? colors.white : '#94A3B8'} />
       </View>
     </View>
   );
@@ -54,7 +54,7 @@ const DeviceCard = ({ name, status, consumption, todayUsage, icon, color, index 
   const progressVal = Math.min((consumption / 3) * 100, 100);
 
   return (
-    <Animated.View 
+    <Animated.View
       entering={FadeInUp.delay(index * 100).duration(600)}
       style={[styles.deviceCard, isActive && { borderColor: `${color}40`, borderWidth: 1.5, shadowColor: color, shadowOpacity: 0.2 }]}
     >
@@ -64,7 +64,7 @@ const DeviceCard = ({ name, status, consumption, todayUsage, icon, color, index 
         </View>
         <CircularIndicator size={48} progress={progressVal} color={color} active={isActive} />
       </View>
-      
+
       <View style={styles.cardMid}>
         <Text style={styles.deviceName}>{name}</Text>
         <View style={[styles.statusBadge, { backgroundColor: isActive ? `${color}15` : '#F1F5F9' }]}>
@@ -85,7 +85,7 @@ const DeviceCard = ({ name, status, consumption, todayUsage, icon, color, index 
           <Text style={styles.usageValue}>{todayUsage} <Text style={styles.unit}>kWh</Text></Text>
         </View>
       </View>
-      
+
       {isActive && (
         <View style={[styles.glowEffect, { backgroundColor: color }]} />
       )}
@@ -173,12 +173,12 @@ export default function DevicesScreen() {
           <Text style={styles.subtitle}>{activeDevices.length} Connected Appliances</Text>
         </View>
         <View style={styles.mainsBox}>
-           <Text style={styles.mainsLabel}>TOTAL LOAD</Text>
-           <Text style={styles.mainsValue}>{(mainsPower / 1000).toFixed(2)} <Text style={styles.mainsUnit}>kW</Text></Text>
+          <Text style={styles.mainsLabel}>TOTAL LOAD</Text>
+          <Text style={styles.mainsValue}>{(mainsPower / 1000).toFixed(2)} <Text style={styles.mainsUnit}>kW</Text></Text>
         </View>
       </Animated.View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import colors from '../../assets/styles/colors';
 import Icon from '../common/Icon';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export default function AuthForm({ mode, onSubmit, loading, error }) {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -106,10 +108,16 @@ export default function AuthForm({ mode, onSubmit, loading, error }) {
           </TouchableOpacity>
         </View>
 
+        {isLogin && (
+          <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPassword')}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+        )}
+
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <TouchableOpacity 
-          style={[styles.submitBtn, loading && styles.disabledBtn]} 
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && styles.disabledBtn]}
           onPress={handleSubmit}
           disabled={loading}
         >
@@ -192,5 +200,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 16,
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+    marginTop: -8,
+  },
+  forgotText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

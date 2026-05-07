@@ -4,7 +4,7 @@ import colors from '../assets/styles/colors';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import { Svg, Circle, Defs, LinearGradient, Stop, Rect, Path } from 'react-native-svg';
-import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, limit, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../utils/firebaseConfig';
 import Animated, { FadeInUp, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 
@@ -47,17 +47,17 @@ const CircularProgress = ({ size, strokeWidth, progress, color, icon }) => {
 };
 
 const ConsumerItem = ({ name, value, percentage, icon, color, index }) => (
-  <Animated.View 
+  <Animated.View
     entering={FadeInRight.delay(index * 100).duration(600)}
     style={styles.consumerItem}
   >
     <CircularProgress size={74} strokeWidth={6} progress={percentage} color={color} icon={icon} />
     <View style={styles.consumerInfo}>
       <Text style={styles.consumerName}>{name}</Text>
-      <Text style={styles.consumerValue}>{value} <Text style={{fontSize: 10, color: colors.textMuted}}>kW</Text> • {percentage}%</Text>
+      <Text style={styles.consumerValue}>{value} <Text style={{ fontSize: 10, color: colors.textMuted }}>kW</Text> • {percentage}%</Text>
     </View>
     <View style={[styles.consumerTrend, { backgroundColor: `${color}10` }]}>
-       <Icon name="trending-up" size={14} color={color} />
+      <Icon name="trending-up" size={14} color={color} />
     </View>
   </Animated.View>
 );
@@ -123,40 +123,75 @@ export default function DashboardScreen() {
           setActiveCount(active.length);
           setActiveList(active);
 
-          const latest = docs[docs.length - 1];
-          const now = new Date();
-          const anomalyData = [{
-            'meter_reading': parseFloat(latest.Active_Power_W) || 0,
-            'hour': now.getHours(),
-            'day': now.getDate(),
-            'day_of_week': now.getDay(),
-            'day_of_year': 124,
-            'week_of_year': 18,
-            'month': now.getMonth() + 1,
-            'is_weekend': now.getDay() === 0 || now.getDay() === 6 ? 1 : 0,
-            'usage_change': 0.05,
-            'rolling_mean_3': parseFloat(latest.Active_Power_W) || 0,
-            'rolling_std_3': 1.2,
-            'usage_diff_3h': 0.1
-          }];
+          // 1. Fetch the latest record from your uploaded Anomaly Dataset
+          const anomQuery = query(collection(db, 'data_anomaly'), limit(1));
+          const anomSnapshot = await getDocs(anomQuery);
+          let anomalyData = [];
+
+          if (!anomSnapshot.empty) {
+            const latestAnom = anomSnapshot.docs[0].data();
+            
+            // Extract features from the "2016-01-01 00:00:00" string
+            const dateObj = latestAnom.timestamp ? new Date(latestAnom.timestamp.replace(' ', 'T')) : new Date();
+            
+            // Prepare features for the AI model to analyze
+            anomalyData = [{
+              'meter_reading': parseFloat(latestAnom.meter_reading) || 0,
+              'hour': dateObj.getHours(),
+              'day': dateObj.getDate(),
+              'day_of_week': dateObj.getDay(),
+              'day_of_year': 1, 
+              'week_of_year': 1,
+              'month': dateObj.getMonth() + 1,
+              'is_weekend': dateObj.getDay() === 0 || dateObj.getDay() === 6 ? 1 : 0,
+              'usage_change': 0.05,
+              'rolling_mean_3': parseFloat(latestAnom.meter_reading) || 0,
+              'rolling_std_3': 1.2,
+              'usage_diff_3h': 0.1
+            }];
+          } else {
+            // Fallback to NILM data if the anomaly dataset is empty
+            const now = new Date();
+            anomalyData = [{
+              'meter_reading': parseFloat(latestDoc.Active_Power_W) || 0,
+              'hour': now.getHours(),
+              'day': now.getDate(),
+              'day_of_week': now.getDay(),
+              'day_of_year': 124,
+              'week_of_year': 18,
+              'month': now.getMonth() + 1,
+              'is_weekend': now.getDay() === 0 || now.getDay() === 6 ? 1 : 0,
+              'usage_change': 0.05,
+              'rolling_mean_3': parseFloat(latest.Active_Power_W) || 0,
+              'rolling_std_3': 1.2,
+              'usage_diff_3h': 0.1
+            }];
+          }
+
+          const triggerAlert = () => {
+            const newAlert = {
+              title: 'AI Anomaly Detected',
+              description: 'The monitoring system detected a significant energy surge in your live data.',
+              type: 'CRITICAL',
+              timestamp: serverTimestamp(),
+              userId: auth.currentUser.uid
+            };
+            setLastAlert(newAlert);
+            setShowNotification(true);
+            setTimeout(() => setShowNotification(false), 5000);
+            addDoc(collection(db, 'alerts'), newAlert);
+          };
 
           const anomalyResp = await fetch('https://habebamostafa-smart-meter-api.hf.space/predict/anomaly', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${HF_TOKEN}` },
             body: JSON.stringify({ data: anomalyData })
           });
-          
+
           if (anomalyResp.ok) {
             const anomalyResult = await anomalyResp.json();
-            if (anomalyResult.predictions && anomalyResult.predictions[0] === 1) {
-              setLastAlert({
-                title: 'Unusual Spike',
-                description: 'We detected a significant power surge. Check your appliances.',
-                type: 'CRITICAL',
-                time: 'Just now'
-              });
-              setShowNotification(true); // Trigger the pop-up
-              setTimeout(() => setShowNotification(false), 5000); // Auto-hide after 5 seconds
+            if (anomalyResult.predictions && (Number(anomalyResult.predictions[0]) >= 0.5 || anomalyResult.predictions[0] === true || anomalyResult.predictions[0] === '1')) {
+              triggerAlert();
             }
           }
         }
@@ -194,87 +229,87 @@ export default function DashboardScreen() {
             <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
           </View>
           <TouchableOpacity style={styles.notifBtn}>
-             <Icon name="bell" size={24} color={colors.text} />
-             {activeCount > 0 && <View style={styles.badge} />}
+            <Icon name="bell" size={24} color={colors.text} />
+            {activeCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).duration(800)}>
           <Card style={styles.mainCard}>
-             <Svg height="200" width="100%" style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0" stopColor="#0D9488" />
-                    <Stop offset="1" stopColor="#3B82F6" />
-                  </LinearGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#grad)" rx="24" />
-                <Path d="M0 100 Q 50 80, 100 120 T 200 90 T 300 130 T 400 100 V 200 H 0 Z" fill="rgba(255,255,255,0.05)" />
-             </Svg>
-             <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                   <View style={styles.liveBadge}>
-                      <PulseDot />
-                      <Text style={styles.liveText}>LIVE MONITORING</Text>
-                   </View>
-                   <Text style={styles.statusText}>{activeCount} Active Devices</Text>
+            <Svg height="200" width="100%" style={StyleSheet.absoluteFill}>
+              <Defs>
+                <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+                  <Stop offset="0" stopColor="#0D9488" />
+                  <Stop offset="1" stopColor="#3B82F6" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#grad)" rx="24" />
+              <Path d="M0 100 Q 50 80, 100 120 T 200 90 T 300 130 T 400 100 V 200 H 0 Z" fill="rgba(255,255,255,0.05)" />
+            </Svg>
+            <View style={styles.cardContent}>
+              <View style={styles.cardHeader}>
+                <View style={styles.liveBadge}>
+                  <PulseDot />
+                  <Text style={styles.liveText}>LIVE MONITORING</Text>
                 </View>
-                
-                <View style={styles.powerRow}>
-                   <Text style={styles.powerValue}>{(livePower / 1000).toFixed(2)}</Text>
-                   <Text style={styles.powerUnit}>kW</Text>
-                </View>
-                <Text style={styles.powerLabel}>Real-time Power Load</Text>
-                
-                <View style={styles.cardDivider} />
-                <View style={styles.cardFooter}>
-                   <Icon name="trending-down" size={16} color="rgba(255,255,255,0.7)" />
-                   <Text style={styles.footerText}>8.4% lower than usual today</Text>
-                </View>
-             </View>
+                <Text style={styles.statusText}>{activeCount} Active Devices</Text>
+              </View>
+
+              <View style={styles.powerRow}>
+                <Text style={styles.powerValue}>{(livePower / 1000).toFixed(2)}</Text>
+                <Text style={styles.powerUnit}>kW</Text>
+              </View>
+              <Text style={styles.powerLabel}>Real-time Power Load</Text>
+
+              <View style={styles.cardDivider} />
+              <View style={styles.cardFooter}>
+                <Icon name="trending-down" size={16} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.footerText}>8.4% lower than usual today</Text>
+              </View>
+            </View>
           </Card>
         </Animated.View>
 
         <View style={styles.sectionHeader}>
-           <Text style={styles.sectionTitle}>Energy Consumers</Text>
-           <TouchableOpacity onPress={fetchDashboardData}>
-              <Icon name="refresh-cw" size={18} color={colors.primary} />
-           </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Energy Consumers</Text>
+          <TouchableOpacity onPress={fetchDashboardData}>
+            <Icon name="refresh-cw" size={18} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         <Card style={styles.listCard}>
-           {activeList.length > 0 ? (
-             activeList.map((key, index) => {
-               const app = applianceMapping[key] || { name: key, icon: 'bolt', color: colors.primary };
-               return (
-                 <ConsumerItem 
-                   key={key}
-                   index={index}
-                   name={app.name}
-                   value={(livePower / 1000 / activeList.length).toFixed(2)}
-                   percentage={Math.floor(100 / activeList.length)}
-                   icon={app.icon}
-                   color={app.color}
-                 />
-               );
-             })
-           ) : loading ? (
-             <ActivityIndicator size="small" color={colors.primary} style={{margin: 20}} />
-           ) : (
-             <Text style={styles.emptyText}>No major activity detected.</Text>
-           )}
+          {activeList.length > 0 ? (
+            activeList.map((key, index) => {
+              const app = applianceMapping[key] || { name: key, icon: 'bolt', color: colors.primary };
+              return (
+                <ConsumerItem
+                  key={key}
+                  index={index}
+                  name={app.name}
+                  value={(livePower / 1000 / activeList.length).toFixed(2)}
+                  percentage={Math.floor(100 / activeList.length)}
+                  icon={app.icon}
+                  color={app.color}
+                />
+              );
+            })
+          ) : loading ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ margin: 20 }} />
+          ) : (
+            <Text style={styles.emptyText}>No major activity detected.</Text>
+          )}
         </Card>
 
         <Text style={styles.sectionTitle}>System Status</Text>
         <Animated.View entering={FadeInUp.delay(400).duration(800)}>
           <Card style={[styles.statusCard, lastAlert?.type === 'CRITICAL' && styles.criticalCard]}>
-             <View style={[styles.statusIconBg, { backgroundColor: lastAlert?.type === 'CRITICAL' ? `${colors.error}15` : `${colors.success}15` }]}>
-                <Icon name="alert-triangle" size={24} color={lastAlert?.type === 'CRITICAL' ? colors.error : colors.success} />
-             </View>
-             <View style={styles.statusContent}>
-                <Text style={styles.statusTitle}>{lastAlert ? lastAlert.title : 'Optimal Performance'}</Text>
-                <Text style={styles.statusDesc}>{lastAlert ? lastAlert.description : 'Your smart meter is reporting high efficiency today.'}</Text>
-             </View>
+            <View style={[styles.statusIconBg, { backgroundColor: lastAlert?.type === 'CRITICAL' ? `${colors.error}15` : `${colors.success}15` }]}>
+              <Icon name="alert-triangle" size={24} color={lastAlert?.type === 'CRITICAL' ? colors.error : colors.success} />
+            </View>
+            <View style={styles.statusContent}>
+              <Text style={styles.statusTitle}>{lastAlert ? lastAlert.title : 'Optimal Performance'}</Text>
+              <Text style={styles.statusDesc}>{lastAlert ? lastAlert.description : 'Your smart meter is reporting high efficiency today.'}</Text>
+            </View>
           </Card>
         </Animated.View>
       </ScrollView>

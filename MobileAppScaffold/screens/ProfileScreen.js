@@ -11,13 +11,13 @@ import { Svg, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const InfoRow = ({ icon, label, value, color, index }) => (
   <Animated.View entering={FadeInRight.delay(index * 100).duration(600)} style={styles.infoRow}>
-     <View style={[styles.infoIconBg, { backgroundColor: `${color}15` }]}>
-        <Icon name={icon} size={20} color={color} />
-     </View>
-     <View style={styles.infoText}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value || 'Not provided'}</Text>
-     </View>
+    <View style={[styles.infoIconBg, { backgroundColor: `${color}15` }]}>
+      <Icon name={icon} size={20} color={color} />
+    </View>
+    <View style={styles.infoText}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || 'Not provided'}</Text>
+    </View>
   </Animated.View>
 );
 
@@ -58,20 +58,20 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(800)} style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
-             <Svg height="120" width="120" style={styles.avatarSvg}>
-                <Defs>
-                  <LinearGradient id="avatarGrad" x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0" stopColor={colors.primary} />
-                    <Stop offset="1" stopColor={colors.secondary} />
-                  </LinearGradient>
-                </Defs>
-                <Circle cx="60" cy="60" r="58" stroke="url(#avatarGrad)" strokeWidth="3" fill="none" strokeDasharray="10 5" />
-             </Svg>
-             <View style={styles.avatarContainer}>
-                <Text style={styles.avatarInitial}>{user?.displayName ? user.displayName[0] : 'U'}</Text>
-             </View>
+            <Svg height="120" width="120" style={styles.avatarSvg}>
+              <Defs>
+                <LinearGradient id="avatarGrad" x1="0" y1="0" x2="1" y2="1">
+                  <Stop offset="0" stopColor={colors.primary} />
+                  <Stop offset="1" stopColor={colors.secondary} />
+                </LinearGradient>
+              </Defs>
+              <Circle cx="60" cy="60" r="58" stroke="url(#avatarGrad)" strokeWidth="3" fill="none" strokeDasharray="10 5" />
+            </Svg>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarInitial}>{user?.displayName ? user.displayName[0] : 'U'}</Text>
+            </View>
           </View>
-          
+
           <Text style={styles.userName}>{user?.displayName || 'Smart User'}</Text>
           <Text style={styles.userEmail}>{user?.email || 'user@smartmeter.com'}</Text>
         </Animated.View>
@@ -83,28 +83,28 @@ export default function ProfileScreen({ navigation }) {
               <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
             ) : (
               <>
-                <InfoRow 
-                  index={0} 
-                  icon="bell" 
-                  label="Phone Number" 
-                  value={profileData?.phone} 
-                  color={colors.primary} 
+                <InfoRow
+                  index={0}
+                  icon="bell"
+                  label="Phone Number"
+                  value={profileData?.phone}
+                  color={colors.primary}
                 />
                 <View style={styles.divider} />
-                <InfoRow 
-                  index={1} 
-                  icon="cpu" 
-                  label="Smart Meter ID" 
-                  value={profileData?.meterId} 
-                  color={colors.secondary} 
+                <InfoRow
+                  index={1}
+                  icon="cpu"
+                  label="Smart Meter ID"
+                  value={profileData?.meterId}
+                  color={colors.secondary}
                 />
                 <View style={styles.divider} />
-                <InfoRow 
-                  index={2} 
-                  icon="home" 
-                  label="Installation Address" 
-                  value={profileData?.address} 
-                  color="#10B981" 
+                <InfoRow
+                  index={2}
+                  icon="home"
+                  label="Installation Address"
+                  value={profileData?.address}
+                  color="#10B981"
                 />
               </>
             )}
@@ -114,10 +114,10 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Actions</Text>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-             <View style={styles.logoutIconBg}>
-                <Icon name="arrow-left" size={20} color={colors.error} />
-             </View>
-             <Text style={styles.logoutText}>Sign Out of System</Text>
+            <View style={styles.logoutIconBg}>
+              <Icon name="arrow-left" size={20} color={colors.error} />
+            </View>
+            <Text style={styles.logoutText}>Sign Out of System</Text>
           </TouchableOpacity>
         </View>
 
