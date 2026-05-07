@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import colors from '../../assets/styles/colors';
+import { useTheme } from '../../context/ThemeContext';
 
 const InputField = ({ label, placeholder, value, onChangeText, secureTextEntry, icon }) => {
+  const { theme } = useTheme();
+
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.inputContainer}>
+      {label && <Text style={[styles.label, { color: theme.text }]}>{label}</Text>}
+      <View style={[styles.inputContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text }]}
           placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={theme.textMuted}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
@@ -29,15 +31,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
     marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
@@ -45,7 +44,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
   },
   iconContainer: {
     marginLeft: 8,

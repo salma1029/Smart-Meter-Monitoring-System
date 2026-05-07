@@ -43,18 +43,18 @@ export default function SignUpScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <AuthForm 
+        <AuthForm
           mode="signup"
           onSubmit={handleSignUp}
           loading={loading}
           error={error}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.switchBtn}
           onPress={() => navigation.navigate('Login')}
         >

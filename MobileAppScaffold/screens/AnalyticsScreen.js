@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
-import colors from '../assets/styles/colors';
+import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import { Svg, Path, Defs, LinearGradient, Stop, Rect, G } from 'react-native-svg';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
-import Animated, { FadeInUp, FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
-const StatBox = ({ label, value, icon, color, index }) => (
+const StatBox = ({ label, value, icon, color, index, theme }) => (
   <Animated.View entering={FadeInUp.delay(index * 150).duration(800)} style={styles.statBox}>
-    <Card style={styles.statCard}>
+    <Card style={[styles.statCard, { backgroundColor: theme.card }]}>
       <View style={[styles.statIconBg, { backgroundColor: `${color}15` }]}>
         <Icon name={icon} size={22} color={color} />
       </View>
       <View style={styles.statBoxContent}>
-        <Text style={styles.statBoxLabel}>{label}</Text>
-        <Text style={styles.statBoxValue}>{value}</Text>
+        <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>{label}</Text>
+        <Text style={[styles.statBoxValue, { color: theme.text }]}>{value}</Text>
       </View>
     </Card>
   </Animated.View>
@@ -29,6 +29,7 @@ export default function AnalyticsScreen() {
   const ranges = ['Day', 'Week', 'Month'];
   const [forecastVal, setForecastVal] = useState('0.00');
   const [loading, setLoading] = useState(true);
+  const { theme, isDark } = useTheme();
 
   useEffect(() => {
     fetchForecast(timeRange);
@@ -55,7 +56,7 @@ export default function AnalyticsScreen() {
         ]);
       }
 
-      const HF_TOKEN = 'PASTE_YOUR_TOKEN_HERE'; // Token moved to .env for security
+      const HF_TOKEN = 'PASTE_YOUR_TOKEN_HERE';
       const response = await fetch('https://habebamostafa-smart-meter-api.hf.space/predict/forecast', {
         method: 'POST',
         headers: {
@@ -84,40 +85,40 @@ export default function AnalyticsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
-          <Text style={styles.title}>Energy Insights</Text>
-          <Text style={styles.subtitle}>Analyzing patterns & forecasting demand</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Energy Insights</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>Analyzing patterns & forecasting demand</Text>
         </Animated.View>
 
         <View style={styles.statsRow}>
-          <StatBox index={0} label="Peak Power" value="3.42 kW" icon="bolt" color="#F43F5E" />
-          <StatBox index={1} label="Efficiency" value="89%" icon="bolt" color="#10B981" />
+          <StatBox index={0} label="Peak Power" value="3.42 kW" icon="bolt" color="#F43F5E" theme={theme} />
+          <StatBox index={1} label="Efficiency" value="89%" icon="bolt" color="#10B981" theme={theme} />
         </View>
 
-        <Animated.View entering={FadeInUp.delay(300).duration(800)} style={styles.rangeSelector}>
+        <Animated.View entering={FadeInUp.delay(300).duration(800)} style={[styles.rangeSelector, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]}>
           {ranges.map(r => (
             <TouchableOpacity
               key={r}
-              style={[styles.rangeBtn, timeRange === r && styles.activeRangeBtn]}
+              style={[styles.rangeBtn, timeRange === r && [styles.activeRangeBtn, { backgroundColor: theme.card }]]}
               onPress={() => setTimeRange(r)}
             >
-              <Text style={[styles.rangeText, timeRange === r && styles.activeRangeText]}>{r}</Text>
+              <Text style={[styles.rangeText, { color: theme.textMuted }, timeRange === r && { color: theme.primary, fontWeight: '800' }]}>{r}</Text>
             </TouchableOpacity>
           ))}
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(450).duration(800)}>
-          <Card style={styles.chartCard}>
+          <Card style={[styles.chartCard, { shadowColor: theme.text }]}>
             <LinearGradient
-              colors={['#0F172A', '#1E293B']}
+              colors={isDark ? ['#1E293B', '#0F172A'] : ['#0F172A', '#1E293B']}
               style={styles.cardInternal}
             >
               <View style={styles.chartHeader}>
                 <Text style={styles.chartTitle}>Consumption Wave</Text>
                 <View style={styles.liveTag}>
-                  <View style={styles.liveDot} />
+                  <View style={[styles.liveDot, { backgroundColor: theme.secondary }]} />
                   <Text style={styles.liveTagText}>AI GENERATED</Text>
                 </View>
               </View>
@@ -126,8 +127,8 @@ export default function AnalyticsScreen() {
                 <Svg height="180" width="100%" viewBox="0 0 300 180">
                   <Defs>
                     <LinearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={colors.secondary} stopOpacity="0.5" />
-                      <Stop offset="1" stopColor={colors.secondary} stopOpacity="0" />
+                      <Stop offset="0" stopColor={theme.secondary} stopOpacity="0.5" />
+                      <Stop offset="1" stopColor={theme.secondary} stopOpacity="0" />
                     </LinearGradient>
                   </Defs>
                   <Path
@@ -137,7 +138,7 @@ export default function AnalyticsScreen() {
                   <Path
                     d="M0,150 Q30,120 60,135 T120,90 T180,110 T240,70 T300,95"
                     fill="none"
-                    stroke={colors.secondary}
+                    stroke={theme.secondary}
                     strokeWidth="4"
                     strokeLinecap="round"
                   />
@@ -154,35 +155,35 @@ export default function AnalyticsScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(600).duration(800)}>
-          <Card style={styles.forecastCard}>
+          <Card style={[styles.forecastCard, { backgroundColor: theme.card }]}>
             <View style={styles.forecastHeader}>
-              <View style={styles.forecastIconBg}>
-                <Icon name="cpu" size={26} color={colors.white} />
+              <View style={[styles.forecastIconBg, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
+                <Icon name="cpu" size={26} color="#FFFFFF" />
               </View>
               <View>
-                <Text style={styles.forecastTitle}>AI Forecast Engine</Text>
-                <Text style={styles.forecastSubtitle}>Projected usage for the next {timeRange.toLowerCase()}</Text>
+                <Text style={[styles.forecastTitle, { color: theme.text }]}>AI Forecast Engine</Text>
+                <Text style={[styles.forecastSubtitle, { color: theme.textMuted }]}>Projected usage for the next {timeRange.toLowerCase()}</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <View style={styles.forecastBody}>
               <View style={styles.forecastMain}>
-                <Text style={styles.mainLabel}>Expected Consumption</Text>
+                <Text style={[styles.mainLabel, { color: theme.textMuted }]}>Expected Consumption</Text>
                 {loading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <ActivityIndicator size="small" color={theme.primary} />
                 ) : (
                   <View style={styles.valueRow}>
-                    <Text style={styles.mainValue}>{forecastVal}</Text>
-                    <Text style={styles.mainUnit}>kWh</Text>
+                    <Text style={[styles.mainValue, { color: theme.text }]}>{forecastVal}</Text>
+                    <Text style={[styles.mainUnit, { color: theme.textMuted }]}>kWh</Text>
                   </View>
                 )}
               </View>
               <View style={styles.forecastMeta}>
-                <View style={styles.metaBadge}>
-                  <Text style={styles.metaLabel}>Confidence</Text>
-                  <Text style={styles.metaValue}>96.4%</Text>
+                <View style={[styles.metaBadge, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                  <Text style={[styles.metaLabel, { color: theme.textMuted }]}>Confidence</Text>
+                  <Text style={[styles.metaValue, { color: theme.primary }]}>96.4%</Text>
                 </View>
               </View>
             </View>
@@ -196,7 +197,6 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     padding: 24,
@@ -209,12 +209,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -1,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748B',
     marginTop: 6,
     fontWeight: '500',
   },
@@ -231,7 +229,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 24,
-    backgroundColor: colors.white,
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 15,
@@ -250,7 +247,6 @@ const styles = StyleSheet.create({
   },
   statBoxLabel: {
     fontSize: 10,
-    color: '#94A3B8',
     textTransform: 'uppercase',
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -258,12 +254,10 @@ const styles = StyleSheet.create({
   statBoxValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1E293B',
     marginTop: 2,
   },
   rangeSelector: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 20,
     padding: 6,
     marginBottom: 32,
@@ -275,7 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   activeRangeBtn: {
-    backgroundColor: colors.white,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -283,12 +276,7 @@ const styles = StyleSheet.create({
   },
   rangeText: {
     fontSize: 14,
-    color: '#64748B',
     fontWeight: '600',
-  },
-  activeRangeText: {
-    color: colors.primary,
-    fontWeight: '800',
   },
   chartCard: {
     padding: 0,
@@ -296,7 +284,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     marginBottom: 24,
     elevation: 8,
-    shadowColor: '#0F172A',
     shadowOpacity: 0.2,
     shadowRadius: 20,
   },
@@ -312,7 +299,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: colors.white,
+    color: '#FFFFFF',
   },
   liveTag: {
     flexDirection: 'row',
@@ -326,11 +313,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.secondary,
     marginRight: 6,
   },
   liveTagText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '900',
   },
@@ -351,7 +337,6 @@ const styles = StyleSheet.create({
   forecastCard: {
     padding: 24,
     borderRadius: 32,
-    backgroundColor: colors.white,
     marginBottom: 40,
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -367,11 +352,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 18,
-    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    shadowColor: colors.primary,
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
@@ -379,16 +362,13 @@ const styles = StyleSheet.create({
   forecastTitle: {
     fontSize: 19,
     fontWeight: '800',
-    color: '#0F172A',
   },
   forecastSubtitle: {
     fontSize: 12,
-    color: '#64748B',
     fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginBottom: 20,
   },
   forecastBody: {
@@ -401,7 +381,6 @@ const styles = StyleSheet.create({
   },
   mainLabel: {
     fontSize: 12,
-    color: '#94A3B8',
     marginBottom: 6,
     fontWeight: '600',
   },
@@ -412,11 +391,9 @@ const styles = StyleSheet.create({
   mainValue: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#1E293B',
   },
   mainUnit: {
     fontSize: 16,
-    color: '#64748B',
     marginLeft: 6,
     marginBottom: 6,
     fontWeight: '700',
@@ -425,21 +402,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   metaBadge: {
-    backgroundColor: '#F8FAFC',
     padding: 10,
     borderRadius: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
   metaLabel: {
     fontSize: 10,
-    color: '#94A3B8',
     fontWeight: '800',
   },
   metaValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: colors.primary,
   }
-});
+});

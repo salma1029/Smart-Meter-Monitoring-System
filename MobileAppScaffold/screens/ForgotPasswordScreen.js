@@ -23,14 +23,14 @@ export default function ForgotPasswordScreen() {
     try {
       await sendPasswordResetEmail(auth, email);
       setIsSent(true);
-      
+
       // Show success message and navigate back to login after 3 seconds
       Alert.alert(
         'Success',
         'A password reset link has been sent to your email. Please check your inbox.',
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
-      
+
       setTimeout(() => {
         navigation.navigate('Login');
       }, 3500);
@@ -44,7 +44,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
@@ -76,8 +76,8 @@ export default function ForgotPasswordScreen() {
             />
           </View>
 
-          <TouchableOpacity 
-            style={[styles.resetBtn, loading && styles.disabledBtn]} 
+          <TouchableOpacity
+            style={[styles.resetBtn, loading && styles.disabledBtn]}
             onPress={handleResetPassword}
             disabled={loading || isSent}
           >
@@ -88,8 +88,8 @@ export default function ForgotPasswordScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.cancelBtn} 
+          <TouchableOpacity
+            style={styles.cancelBtn}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={styles.cancelBtnText}>Back to Login</Text>
