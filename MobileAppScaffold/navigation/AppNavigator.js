@@ -1,22 +1,37 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { useTheme } from '../context/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import TabNavigator from './TabNavigator';
-import colors from '../assets/styles/colors';
 
 const Stack = createStackNavigator();
 
 export default function AppNavigator({ user }) {
+  const { theme, isDark } = useTheme();
+
+  const navigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: theme.primary,
+      background: theme.background,
+      card: theme.card,
+      text: theme.text,
+      border: theme.border,
+      notification: theme.accent,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator 
         initialRouteName={user ? "Main" : "Login"}
         screenOptions={{
           headerShown: false,
-          cardStyle: { backgroundColor: colors.background },
+          cardStyle: { backgroundColor: theme.background },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
       >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
-import colors from '../assets/styles/colors';
+import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import Icon from '../components/common/Icon';
 import { Svg, Circle, Defs, LinearGradient, Stop, Rect, Path } from 'react-native-svg';
@@ -10,7 +10,7 @@ import Animated, { FadeInUp, FadeInRight, useSharedValue, useAnimatedStyle, with
 
 const { width } = Dimensions.get('window');
 
-const CircularProgress = ({ size, strokeWidth, progress, color, icon }) => {
+const CircularProgress = ({ size, strokeWidth, progress, color, icon, theme }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
@@ -19,7 +19,7 @@ const CircularProgress = ({ size, strokeWidth, progress, color, icon }) => {
     <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
       <Svg width={size} height={size}>
         <Circle
-          stroke="#E2E8F0"
+          stroke={theme.border}
           fill="none"
           cx={size / 2}
           cy={size / 2}
@@ -46,15 +46,15 @@ const CircularProgress = ({ size, strokeWidth, progress, color, icon }) => {
   );
 };
 
-const ConsumerItem = ({ name, value, percentage, icon, color, index }) => (
+const ConsumerItem = ({ name, value, percentage, icon, color, index, theme }) => (
   <Animated.View
     entering={FadeInRight.delay(index * 100).duration(600)}
     style={styles.consumerItem}
   >
-    <CircularProgress size={74} strokeWidth={6} progress={percentage} color={color} icon={icon} />
+    <CircularProgress size={74} strokeWidth={6} progress={percentage} color={color} icon={icon} theme={theme} />
     <View style={styles.consumerInfo}>
-      <Text style={styles.consumerName}>{name}</Text>
-      <Text style={styles.consumerValue}>{value} <Text style={{ fontSize: 10, color: colors.textMuted }}>kW</Text> • {percentage}%</Text>
+      <Text style={[styles.consumerName, { color: theme.text }]}>{name}</Text>
+      <Text style={[styles.consumerValue, { color: theme.textMuted }]}>{value} <Text style={{ fontSize: 10, color: theme.textMuted }}>kW</Text> • {percentage}%</Text>
     </View>
     <View style={[styles.consumerTrend, { backgroundColor: `${color}10` }]}>
       <Icon name="trending-up" size={14} color={color} />
@@ -78,7 +78,8 @@ export default function DashboardScreen() {
   const [activeList, setActiveList] = useState([]);
   const [lastAlert, setLastAlert] = useState(null);
   const [userName, setUserName] = useState('User');
-  const [showNotification, setShowNotification] = useState(false); // For the pop-up banner
+  const [showNotification, setShowNotification] = useState(false);
+  const { theme, isDark } = useTheme();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -105,7 +106,7 @@ export default function DashboardScreen() {
           parseFloat(d.Reactive_Power_VAR) || 50.0
         ]);
 
-        const HF_TOKEN = 'PASTE_YOUR_TOKEN_HERE'; // Token moved to .env for security
+        const HF_TOKEN = 'PASTE_YOUR_TOKEN_HERE';
 
         const response = await fetch('https://habebamostafa-smart-meter-api.hf.space/predict/nilm', {
           method: 'POST',
@@ -123,24 +124,20 @@ export default function DashboardScreen() {
           setActiveCount(active.length);
           setActiveList(active);
 
-          // 1. Fetch the latest record from your uploaded Anomaly Dataset
           const anomQuery = query(collection(db, 'data_anomaly'), limit(1));
           const anomSnapshot = await getDocs(anomQuery);
           let anomalyData = [];
 
           if (!anomSnapshot.empty) {
             const latestAnom = anomSnapshot.docs[0].data();
-            
-            // Extract features from the "2016-01-01 00:00:00" string
             const dateObj = latestAnom.timestamp ? new Date(latestAnom.timestamp.replace(' ', 'T')) : new Date();
-            
-            // Prepare features for the AI model to analyze
+
             anomalyData = [{
               'meter_reading': parseFloat(latestAnom.meter_reading) || 0,
               'hour': dateObj.getHours(),
               'day': dateObj.getDate(),
               'day_of_week': dateObj.getDay(),
-              'day_of_year': 1, 
+              'day_of_year': 1,
               'week_of_year': 1,
               'month': dateObj.getMonth() + 1,
               'is_weekend': dateObj.getDay() === 0 || dateObj.getDay() === 6 ? 1 : 0,
@@ -150,7 +147,6 @@ export default function DashboardScreen() {
               'usage_diff_3h': 0.1
             }];
           } else {
-            // Fallback to NILM data if the anomaly dataset is empty
             const now = new Date();
             anomalyData = [{
               'meter_reading': parseFloat(latestDoc.Active_Power_W) || 0,
@@ -162,7 +158,7 @@ export default function DashboardScreen() {
               'month': now.getMonth() + 1,
               'is_weekend': now.getDay() === 0 || now.getDay() === 6 ? 1 : 0,
               'usage_change': 0.05,
-              'rolling_mean_3': parseFloat(latest.Active_Power_W) || 0,
+              'rolling_mean_3': parseFloat(latestDoc.Active_Power_W) || 0,
               'rolling_std_3': 1.2,
               'usage_diff_3h': 0.1
             }];
@@ -215,32 +211,32 @@ export default function DashboardScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {showNotification && (
-        <Animated.View entering={FadeInUp} style={styles.notifBanner}>
-          <Icon name="alert-triangle" size={20} color={colors.white} />
+        <Animated.View entering={FadeInUp} style={[styles.notifBanner, { backgroundColor: theme.error, shadowColor: theme.error }]}>
+          <Icon name="alert-triangle" size={20} color="#FFFFFF" />
           <Text style={styles.notifBannerText}>Critical: Energy Spike Detected!</Text>
         </Animated.View>
       )}
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Welcome, {userName}</Text>
-            <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
+            <Text style={[styles.greeting, { color: theme.text }]}>Welcome, {userName}</Text>
+            <Text style={[styles.date, { color: theme.textMuted }]}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
           </View>
-          <TouchableOpacity style={styles.notifBtn}>
-            <Icon name="bell" size={24} color={colors.text} />
-            {activeCount > 0 && <View style={styles.badge} />}
+          <TouchableOpacity style={[styles.notifBtn, { backgroundColor: theme.card }]}>
+            <Icon name="bell" size={24} color={theme.text} />
+            {activeCount > 0 && <View style={[styles.badge, { backgroundColor: theme.error, borderColor: theme.card }]} />}
           </TouchableOpacity>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).duration(800)}>
-          <Card style={styles.mainCard}>
+          <Card style={[styles.mainCard, { shadowColor: theme.primary }]}>
             <Svg height="200" width="100%" style={StyleSheet.absoluteFill}>
               <Defs>
                 <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor="#0D9488" />
-                  <Stop offset="1" stopColor="#3B82F6" />
+                  <Stop offset="0" stopColor={theme.primary} />
+                  <Stop offset="1" stopColor={theme.secondary} />
                 </LinearGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#grad)" rx="24" />
@@ -271,16 +267,16 @@ export default function DashboardScreen() {
         </Animated.View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Energy Consumers</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Energy Consumers</Text>
           <TouchableOpacity onPress={fetchDashboardData}>
-            <Icon name="refresh-cw" size={18} color={colors.primary} />
+            <Icon name="refresh-cw" size={18} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
-        <Card style={styles.listCard}>
+        <Card style={[styles.listCard, { backgroundColor: theme.card }]}>
           {activeList.length > 0 ? (
             activeList.map((key, index) => {
-              const app = applianceMapping[key] || { name: key, icon: 'bolt', color: colors.primary };
+              const app = applianceMapping[key] || { name: key, icon: 'bolt', color: theme.primary };
               return (
                 <ConsumerItem
                   key={key}
@@ -290,25 +286,26 @@ export default function DashboardScreen() {
                   percentage={Math.floor(100 / activeList.length)}
                   icon={app.icon}
                   color={app.color}
+                  theme={theme}
                 />
               );
             })
           ) : loading ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ margin: 20 }} />
+            <ActivityIndicator size="small" color={theme.primary} style={{ margin: 20 }} />
           ) : (
-            <Text style={styles.emptyText}>No major activity detected.</Text>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>No major activity detected.</Text>
           )}
         </Card>
 
-        <Text style={styles.sectionTitle}>System Status</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>System Status</Text>
         <Animated.View entering={FadeInUp.delay(400).duration(800)}>
-          <Card style={[styles.statusCard, lastAlert?.type === 'CRITICAL' && styles.criticalCard]}>
-            <View style={[styles.statusIconBg, { backgroundColor: lastAlert?.type === 'CRITICAL' ? `${colors.error}15` : `${colors.success}15` }]}>
-              <Icon name="alert-triangle" size={24} color={lastAlert?.type === 'CRITICAL' ? colors.error : colors.success} />
+          <Card style={[styles.statusCard, { backgroundColor: theme.card }, lastAlert?.type === 'CRITICAL' && { borderColor: `${theme.error}30`, borderWidth: 1 }]}>
+            <View style={[styles.statusIconBg, { backgroundColor: lastAlert?.type === 'CRITICAL' ? `${theme.error}15` : `${theme.success}15` }]}>
+              <Icon name="alert-triangle" size={24} color={lastAlert?.type === 'CRITICAL' ? theme.error : theme.success} />
             </View>
             <View style={styles.statusContent}>
-              <Text style={styles.statusTitle}>{lastAlert ? lastAlert.title : 'Optimal Performance'}</Text>
-              <Text style={styles.statusDesc}>{lastAlert ? lastAlert.description : 'Your smart meter is reporting high efficiency today.'}</Text>
+              <Text style={[styles.statusTitle, { color: theme.text }]}>{lastAlert ? lastAlert.title : 'Optimal Performance'}</Text>
+              <Text style={[styles.statusDesc, { color: theme.textMuted }]}>{lastAlert ? lastAlert.description : 'Your smart meter is reporting high efficiency today.'}</Text>
             </View>
           </Card>
         </Animated.View>
@@ -320,7 +317,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     padding: 24,
@@ -336,12 +332,10 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -0.5,
   },
   date: {
     fontSize: 14,
-    color: '#64748B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -349,7 +343,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 16,
-    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -364,9 +357,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.error,
     borderWidth: 2,
-    borderColor: colors.white,
   },
   mainCard: {
     height: 200,
@@ -376,7 +367,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     borderWidth: 0,
     elevation: 10,
-    shadowColor: colors.primary,
     shadowOpacity: 0.3,
     shadowRadius: 15,
   },
@@ -406,7 +396,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   liveText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -423,7 +413,7 @@ const styles = StyleSheet.create({
   powerValue: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#FFFFFF',
   },
   powerUnit: {
     fontSize: 20,
@@ -462,7 +452,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0F172A',
   },
   listCard: {
     padding: 16,
@@ -484,11 +473,9 @@ const styles = StyleSheet.create({
   consumerName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1E293B',
   },
   consumerValue: {
     fontSize: 14,
-    color: '#64748B',
     marginTop: 2,
     fontWeight: '500',
   },
@@ -504,11 +491,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 24,
     alignItems: 'center',
-    backgroundColor: colors.white,
-  },
-  criticalCard: {
-    borderWidth: 1,
-    borderColor: `${colors.error}30`,
   },
   statusIconBg: {
     width: 52,
@@ -524,17 +506,14 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1E293B',
     marginBottom: 4,
   },
   statusDesc: {
     fontSize: 13,
-    color: '#64748B',
     lineHeight: 18,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#94A3B8',
     padding: 20,
   },
   notifBanner: {
@@ -542,21 +521,20 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     right: 20,
-    backgroundColor: colors.error,
     padding: 16,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 1000,
-    shadowColor: colors.error,
     shadowOpacity: 0.5,
     shadowRadius: 15,
     elevation: 10,
   },
   notifBannerText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 12,
     fontSize: 14,
   }
 });
+;

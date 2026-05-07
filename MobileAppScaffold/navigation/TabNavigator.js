@@ -1,16 +1,18 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTheme } from '../context/ThemeContext';
 import DashboardScreen from '../screens/DashboardScreen';
 import DevicesScreen from '../screens/DevicesScreen';
 import AlertsScreen from '../screens/AlertsScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import colors from '../assets/styles/colors';
 import Icon from '../components/common/Icon';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -24,15 +26,15 @@ export default function TabNavigator() {
 
           return <Icon name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textMuted,
         tabBarStyle: {
           height: 70,
           paddingBottom: 15,
           paddingTop: 10,
-          backgroundColor: colors.surface,
+          backgroundColor: theme.card,
           borderTopWidth: 1,
-          borderTopColor: colors.border,
+          borderTopColor: theme.border,
         },
         headerShown: false,
       })}
